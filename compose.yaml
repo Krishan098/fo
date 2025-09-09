@@ -8,44 +8,41 @@
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
 services:
-  app:
-    build:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - MONGO_DB_URL=mongodb://mongodb:27017
-      - DATABASE_NAME=contract_intelligence
-    depends_on:
-      - mongodb
+      - COHERE_API_KEY=${COHERE_API_KEY}
     volumes:
-      - ./storage:/app/storage
+      - ./backend:/app
+      - backend_uploads:/app/uploads
     restart: unless-stopped
-    networks:
-      - contract_network
-  mongodb:
-    image: mongo:7.0
-    container_name: contract_mongodb
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "27017:27017"
+      - "3000:3000"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=admin123
-      - MONGO_INITDB_DATABASE=contract_intelligence
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
     volumes:
-      - mongodb_data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    networks:
-      - contract_network
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
-  mongodb_data:
-    driver: local
-
-networks:
-  contract_network:
-    driver: bridge
-
+  backend_uploads:
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to

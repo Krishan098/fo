@@ -3,6 +3,7 @@ uvicorn[standard]
 motor
 pydantic
 pydantic-settings
+cohere
 python-dotenv
 python-multipart
 aiofiles
